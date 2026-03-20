@@ -22,16 +22,52 @@ body {
     border-bottom: 2px solid #0f0;
     margin-bottom: 10px;
     padding: 0 10px;
+    background: #000;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
 }
 
-#status, #queue-status {
+#about-link a:hover {
+    background-color: #ff0;
+    color: #000;
+}
+
+#status, #queue-status, #about-link {
     font-size: 0.8em;
     color: #0f0;
+    flex-basis: 150px;
 }
 
-#signal-strength {
-    color: #fff;
-    text-shadow: 0 0 5px #0f0;
+#about-link {
+    text-align: center;
+}
+
+#queue-status {
+    text-align: right;
+}
+
+/* New Glitch Animations */
+.glitch-flicker {
+    animation: chromatic 0.3s infinite;
+}
+
+@keyframes chromatic {
+    0% { text-shadow: 1px 0 red, -1px 0 blue; opacity: 1; }
+    20% { text-shadow: -1px 0 red, 1px 0 blue; opacity: 0.9; }
+    40% { text-shadow: 1px 1px red, -1px -1px blue; opacity: 1; }
+    60% { text-shadow: -1px -1px red, 1px 1px blue; opacity: 0.8; }
+    80% { text-shadow: 2px 0 red, -2px 0 blue; opacity: 1; }
+    100% { text-shadow: 1px 0 red, -1px 0 blue; opacity: 1; }
+}
+
+.source-pulse {
+    animation: pulse-green 3s infinite alternate;
+}
+
+@keyframes pulse-green {
+    0% { color: #666; text-shadow: none; }
+    100% { color: #0f0; text-shadow: 0 0 8px #0f0; }
 }
 
 h1 {
