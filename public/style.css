@@ -21,11 +21,43 @@ body {
     align-items: center;
     border-bottom: 2px solid #0f0;
     margin-bottom: 10px;
-    padding: 0 10px;
+    padding: 5px 10px;
     background: #000;
     position: sticky;
     top: 0;
     z-index: 1000;
+}
+
+#status {
+    flex: 1;
+    font-size: 0.85em;
+    color: #0f0;
+}
+
+#title-wrapper {
+    flex: 2;
+    text-align: center;
+}
+
+#right-controls {
+    flex: 1;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 15px;
+}
+
+#queue-status {
+    font-size: 0.85em;
+    color: #0f0;
+}
+
+#about-link a {
+    color: #ff0;
+    text-decoration: none;
+    border: 1px solid #ff0;
+    padding: 2px 8px;
+    font-size: 0.85em;
 }
 
 #about-link a:hover {
@@ -33,50 +65,18 @@ body {
     color: #000;
 }
 
-#status, #queue-status, #about-link {
-    font-size: 0.8em;
-    color: #0f0;
-    flex-basis: 150px;
-}
-
-#about-link {
-    text-align: center;
-}
-
-#queue-status {
-    text-align: right;
-}
-
-/* New Glitch Animations */
-.glitch-flicker {
-    animation: chromatic 0.3s infinite;
-}
-
-@keyframes chromatic {
-    0% { text-shadow: 1px 0 red, -1px 0 blue; opacity: 1; }
-    20% { text-shadow: -1px 0 red, 1px 0 blue; opacity: 0.9; }
-    40% { text-shadow: 1px 1px red, -1px -1px blue; opacity: 1; }
-    60% { text-shadow: -1px -1px red, 1px 1px blue; opacity: 0.8; }
-    80% { text-shadow: 2px 0 red, -2px 0 blue; opacity: 1; }
-    100% { text-shadow: 1px 0 red, -1px 0 blue; opacity: 1; }
-}
-
-.source-pulse {
-    animation: pulse-green 3s infinite alternate;
-}
-
-@keyframes pulse-green {
-    0% { color: #666; text-shadow: none; }
-    100% { color: #0f0; text-shadow: 0 0 8px #0f0; }
+#signal-strength {
+    color: #fff;
+    text-shadow: 0 0 5px #0f0;
 }
 
 h1 {
     text-align: center;
     color: red;
     text-shadow: 2px 2px 0px #fff;
-    margin: 10px 0;
-    font-size: 2.5em;
-    animation: glitch 1s infinite alternate;
+    margin: 0;
+    font-size: 2.2em;
+    animation: glitch 1.5s infinite alternate;
 }
 
 #ticker {
@@ -117,11 +117,34 @@ h1 {
     100% { transform: translate(0); }
 }
 
+/* New Glitch Animations */
+.glitch-flicker {
+    animation: chromatic 0.3s infinite;
+}
+
+@keyframes chromatic {
+    0% { text-shadow: 1px 0 red, -1px 0 blue; opacity: 1; }
+    20% { text-shadow: -1px 0 red, 1px 0 blue; opacity: 0.9; }
+    40% { text-shadow: 1px 1px red, -1px -1px blue; opacity: 1; }
+    60% { text-shadow: -1px -1px red, 1px 1px blue; opacity: 0.8; }
+    80% { text-shadow: 2px 0 red, -2px 0 blue; opacity: 1; }
+    100% { text-shadow: 1px 0 red, -1px 0 blue; opacity: 1; }
+}
+
+.source-pulse {
+    animation: pulse-green 3s infinite alternate;
+}
+
+@keyframes pulse-green {
+    0% { color: #666; text-shadow: none; }
+    100% { color: #0f0; text-shadow: 0 0 8px #0f0; }
+}
+
 #stream {
     flex-grow: 1;
     overflow-y: auto;
-    padding-bottom: 20px;
-    /* Hide scrollbar but keep functionality */
+    padding-bottom: 10px;
+    scroll-behavior: smooth;
     scrollbar-width: none; 
     -ms-overflow-style: none;
 }

@@ -118,17 +118,31 @@ function addNewsItem(item) {
     div.style.fontSize = `${randomSize}em`;
 
     const lowerTitle = item.title.toLowerCase();
+    const isHighImpact = lowerTitle.includes('breaking') || 
+                         lowerTitle.includes('live') || 
+                         lowerTitle.includes('war') || 
+                         lowerTitle.includes('conflict') || 
+                         lowerTitle.includes('died') || 
+                         lowerTitle.includes('death') || 
+                         lowerTitle.includes('killed');
+
     if (lowerTitle.includes('breaking')) div.classList.add('breaking');
     if (lowerTitle.includes('live')) div.classList.add('live');
     if (lowerTitle.includes('war') || lowerTitle.includes('conflict')) div.classList.add('war');
     if (lowerTitle.includes('died') || lowerTitle.includes('death') || lowerTitle.includes('killed')) div.classList.add('death');
 
-    // Random choice for new glitch effects
+    // Rare Glitch Effects - Only triggered by high impact keywords or very rare chance
     const effectChance = Math.random();
-    if (effectChance > 0.9) div.classList.add('glitch-flicker');
+    if (isHighImpact && effectChance > 0.7) {
+        div.classList.add('glitch-flicker');
+    } else if (effectChance > 0.99) { // Extremely rare for non-impact news
+        div.classList.add('glitch-flicker');
+    }
     
     const sourcePulseChance = Math.random();
-    const sourceClass = sourcePulseChance > 0.8 ? 'source source-pulse' : 'source';
+    const sourceClass = (isHighImpact && sourcePulseChance > 0.5) || (sourcePulseChance > 0.98) 
+        ? 'source source-pulse' 
+        : 'source';
 
     const time = new Date().toLocaleTimeString();
     div.innerHTML = `
@@ -139,9 +153,9 @@ function addNewsItem(item) {
 
     const titleEl = div.querySelector('.news-title');
     
-    // Scramble effect check
-    if (Math.random() > 0.85) {
-        setTimeout(() => scrambleText(titleEl, item.title), Math.random() * 5000);
+    // Scramble effect check - Rare, tied to impact
+    if ((isHighImpact && Math.random() > 0.6) || (Math.random() > 0.99)) {
+        setTimeout(() => scrambleText(titleEl, item.title), Math.random() * 2000);
     }
 
     div.onclick = (e) => {
