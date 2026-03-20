@@ -1,0 +1,151 @@
+body {
+    background-color: #000;
+    color: #0f0; /* Green terminal */
+    font-family: 'Courier New', Courier, monospace;
+    margin: 0;
+    padding: 20px;
+    height: 100vh;
+    box-sizing: border-box;
+    overflow: hidden;
+}
+
+#container {
+    display: flex;
+    flex-direction: column;
+    height: calc(100% - 30px); /* Space for ticker */
+}
+
+#header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid #0f0;
+    margin-bottom: 10px;
+    padding: 0 10px;
+}
+
+#status, #queue-status {
+    font-size: 0.8em;
+    color: #0f0;
+}
+
+#signal-strength {
+    color: #fff;
+    text-shadow: 0 0 5px #0f0;
+}
+
+h1 {
+    text-align: center;
+    color: red;
+    text-shadow: 2px 2px 0px #fff;
+    margin: 10px 0;
+    font-size: 2.5em;
+    animation: glitch 1s infinite alternate;
+}
+
+#ticker {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 30px;
+    background-color: #111;
+    border-top: 1px solid #333;
+    overflow: hidden;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    z-index: 100;
+}
+
+#ticker-content {
+    display: inline-block;
+    padding-left: 100%;
+    animation: ticker 60s linear infinite;
+    color: #ff0;
+    font-weight: bold;
+    font-size: 0.9em;
+}
+
+@keyframes ticker {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-100%); }
+}
+
+@keyframes glitch {
+    0% { transform: translate(0); }
+    20% { transform: translate(-2px, 2px); }
+    40% { transform: translate(-2px, -2px); }
+    60% { transform: translate(2px, 2px); }
+    80% { transform: translate(2px, -2px); }
+    100% { transform: translate(0); }
+}
+
+#stream {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding-bottom: 20px;
+    /* Hide scrollbar but keep functionality */
+    scrollbar-width: none; 
+    -ms-overflow-style: none;
+}
+#stream::-webkit-scrollbar { 
+    display: none; 
+}
+
+.news-item {
+    margin-bottom: 5px;
+    padding: 5px;
+    border-bottom: 1px dashed #333;
+    transition: all 0.2s;
+    font-size: 1.2em;
+}
+
+.news-item:hover {
+    background-color: #111;
+    cursor: pointer;
+}
+
+.source {
+    color: #666;
+    font-size: 0.8em;
+    margin-right: 10px;
+}
+
+.timestamp {
+    color: #444;
+    font-size: 0.8em;
+    margin-right: 10px;
+}
+
+/* Chaos Styles */
+.breaking {
+    color: red;
+    font-weight: bold;
+    font-size: 1.5em;
+    border: 2px solid red;
+    animation: flash 0.5s infinite;
+}
+
+.live {
+    color: yellow;
+    background-color: red;
+    padding: 0 5px;
+}
+
+.war {
+    color: orange;
+    font-family: Impact, sans-serif;
+    text-transform: uppercase;
+}
+
+.death {
+    color: #888;
+    font-style: italic;
+}
+
+@keyframes flash {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}

@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Too Much News!!</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="client.js" defer></script>
+</head>
+<body>
+    <div id="container">
+        <div id="header">
+            <div id="status">SIGNAL: <span id="signal-strength">STABLE</span></div>
+            <h1>TOO MUCH NEWS!!</h1>
+            <div id="queue-status">BUFFER: <span id="queue-count">0</span></div>
+        </div>
+        <div id="stream"></div>
+    </div>
+    <div id="ticker">
+        <div id="ticker-content"></div>
+    </div>
+</body>
+</html>
