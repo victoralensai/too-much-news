@@ -31,6 +31,32 @@
             color: #0f0;
             text-decoration: underline;
         }
+        @media (max-width: 768px) {
+            body {
+                height: auto;
+                min-height: 100vh;
+                overflow-y: auto;
+                padding: 10px;
+            }
+            #about-container {
+                max-width: 100%;
+                margin: 20px 0;
+                padding: 15px;
+                border-width: 1px;
+            }
+            #about-container h1 {
+                font-size: 1.4em;
+                margin: 0 0 15px 0;
+            }
+            .about-text p {
+                font-size: 0.95em;
+                line-height: 1.5;
+            }
+            .back-link {
+                font-size: 0.9em;
+                padding: 8px 0;
+            }
+        }
     </style>
 </head>
 <body>

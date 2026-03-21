@@ -26,6 +26,7 @@ let focusedArticleIndex = -1;
 let faviconIsMindblown = false;
 
 const GLITCH_CHARS = '01$#@%&*<>?/';
+const isTouchDevice = window.matchMedia('(pointer: coarse)').matches;
 
 if (pauseToggleEl) {
     pauseToggleEl.addEventListener('click', () => {
@@ -42,6 +43,10 @@ if (helpModalEl) {
 }
 
 window.addEventListener('keydown', (event) => {
+    if (isTouchDevice) {
+        return;
+    }
+
     if (event.key === '?') {
         event.preventDefault();
         setHelpModalVisible(helpModalEl?.getAttribute('aria-hidden') !== 'false');

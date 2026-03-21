@@ -4,7 +4,8 @@ body {
     font-family: 'Courier New', Courier, monospace;
     margin: 0;
     padding: 20px;
-    height: 100vh;
+    height: 100dvh;
+    min-height: 100vh;
     box-sizing: border-box;
     overflow: hidden;
 }
@@ -13,6 +14,7 @@ body {
     display: flex;
     flex-direction: column;
     height: calc(100% - 30px); /* Space for ticker */
+    min-height: 0;
 }
 
 #header {
@@ -115,6 +117,47 @@ body {
     }
 }
 
+@media (max-width: 768px) {
+    body {
+        padding: 10px;
+    }
+
+    #container {
+        height: calc(100dvh - 45px);
+    }
+
+    #header {
+        padding: 4px 6px;
+        gap: 6px;
+    }
+
+    h1 {
+        font-size: 1.45em;
+    }
+
+    #right-controls {
+        gap: 8px;
+    }
+
+    #pause-toggle,
+    #about-link a {
+        min-width: 44px;
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 4px 10px;
+    }
+
+    #ticker {
+        height: 25px;
+    }
+
+    #ticker-content {
+        font-size: 0.75em;
+    }
+}
+
 h1 {
     text-align: center;
     color: red;
@@ -191,9 +234,11 @@ body.paused #ticker-content {
 
 #stream {
     flex-grow: 1;
+    min-height: 0;
     overflow-y: auto;
     padding-bottom: 10px;
     scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
     scrollbar-width: none; 
     -ms-overflow-style: none;
 }
