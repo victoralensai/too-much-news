@@ -87,6 +87,43 @@ Run with:
 
 `npm test`
 
+## CI/CD
+
+GitHub Actions workflow: `.github/workflows/cicd.yml`
+
+Pipeline behavior:
+
+- On pull requests to `main`: run CI (`npm ci`, `npm run build`, `npm test`)
+- On pushes to `main`: run CI, then publish Docker image to GHCR
+- On version tags (`v*`): run CI, then publish Docker image with tag metadata
+
+Published image:
+
+- Registry: `ghcr.io/victoralensai/too-much-news`
+- Tags include commit SHA, branch/tag refs, and `latest` on default branch
+
+## Deployment
+
+### Run with Docker (local)
+
+Build:
+
+`docker build -t too-much-news:local .`
+
+Run:
+
+`docker run --rm -p 3000:3000 --env-file .env too-much-news:local`
+
+### Run published image (GHCR)
+
+`docker run --rm -p 3000:3000 ghcr.io/victoralensai/too-much-news:latest`
+
+Optional persistent archive mount:
+
+`docker run --rm -p 3000:3000 -v $(pwd)/archive.json:/app/archive.json ghcr.io/victoralensai/too-much-news:latest`
+
+For full self-hosted instructions with Docker Compose and update workflow, see `DEPLOYMENT.md`.
+
 ## Project Notes
 
 - Runtime archive state file (`archive.json`) is ignored by git.
