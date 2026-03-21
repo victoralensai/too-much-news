@@ -214,14 +214,15 @@ function jumpFocusToBoundary(goToLatest) {
     applyFocusedItem(items);
 }
 
-function applyFocusedItem(items) {
+function applyFocusedItem(items, options) {
+    const shouldScroll = options?.scroll !== false;
     const itemList = items || getNewsItemElements();
     itemList.forEach((item, index) => {
         item.classList.toggle('news-item-focused', index === focusedArticleIndex);
     });
 
     const focused = itemList[focusedArticleIndex];
-    if (focused) {
+    if (focused && shouldScroll) {
         focused.scrollIntoView({ block: 'nearest' });
     }
 }
@@ -489,7 +490,9 @@ function addNewsItem(item) {
         }
     }
 
-    applyFocusedItem();
+    if (focusedArticleIndex !== -1) {
+        applyFocusedItem(undefined, { scroll: false });
+    }
 }
 
 function updateTicker() {
