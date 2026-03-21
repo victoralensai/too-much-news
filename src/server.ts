@@ -14,7 +14,7 @@ const io = new SocketIOServer(server);
 const PORT = readPositiveIntEnv('PORT', 3000);
 const ARCHIVE_FILE = process.env.ARCHIVE_FILE_PATH || path.join(__dirname, '../archive.json');
 const ARCHIVE_LIMIT = readPositiveIntEnv('ARCHIVE_LIMIT', 2000);
-const HISTORY_SYNC_LIMIT = readPositiveIntEnv('HISTORY_SYNC_LIMIT', 500);
+const HISTORY_SYNC_LIMIT = readPositiveIntEnv('HISTORY_SYNC_LIMIT', 1000);
 const ARCHIVE_SAVE_INTERVAL_MS = readPositiveIntEnv('ARCHIVE_SAVE_INTERVAL_MS', 300000);
 const BROADCAST_DELAY_MIN_MS = readPositiveIntEnv('BROADCAST_DELAY_MIN_MS', 300);
 const BROADCAST_DELAY_MAX_MS = readPositiveIntEnv('BROADCAST_DELAY_MAX_MS', 1500);
@@ -23,11 +23,15 @@ const BROADCAST_DELAY_MAX_MS = readPositiveIntEnv('BROADCAST_DELAY_MAX_MS', 1500
 app.use(express.static(path.join(__dirname, '../public')));
 
 app.get('/health', (_req, res) => {
+    const newestArticleAgeMs =
+        newestArticleTimestampMs === null ? null : Math.max(0, Date.now() - newestArticleTimestampMs);
+
     res.status(200).json(
         createHealthPayload(
             newsArchive.length,
             pendingNews.length,
-            Math.floor(process.uptime())
+            Math.floor(process.uptime()),
+            newestArticleAgeMs
         )
     );
 });
@@ -37,6 +41,7 @@ const poller = new NewsPoller();
 
 // In-memory archive (Ring Buffer) for new clients and steady broadcast
 let newsArchive: NewsItem[] = [];
+let newestArticleTimestampMs: number | null = null;
 
 // Load archive from file if exists to survive restarts
 try {
@@ -45,6 +50,13 @@ try {
         const parsed = JSON.parse(data);
         if (isNewsItemArray(parsed)) {
             newsArchive = parseArchiveJson(data, ARCHIVE_LIMIT);
+            const newestLoaded = newsArchive[newsArchive.length - 1];
+            const parsedPubDate = newestLoaded?.pubDate ? Date.parse(newestLoaded.pubDate) : Number.NaN;
+            if (!Number.isNaN(parsedPubDate)) {
+                newestArticleTimestampMs = parsedPubDate;
+            } else if (newsArchive.length > 0) {
+                newestArticleTimestampMs = Date.now();
+            }
         } else {
             console.warn('[Archive] Existing archive has invalid format. Starting with empty archive.');
         }
@@ -82,6 +94,7 @@ poller.on('news', (item: NewsItem) => {
     // Add to archive (deduplicate link check could go here too, but poller handles it)
     newsArchive.push(item);
     newsArchive = trimArchive(newsArchive, ARCHIVE_LIMIT);
+    newestArticleTimestampMs = Date.now();
 
     // Save immediately if this is the first item ever to ensure file creation
     if (newsArchive.length === 1) {
@@ -135,14 +148,37 @@ function shutdown(signal: string) {
     saveArchive();
 
     io.close(() => {
-        server.close((err) => {
-            if (err) {
-                console.error('[Server] Error during shutdown:', err);
-                process.exit(1);
+        try {
+            server.close((err) => {
+                const knownErr = err as NodeJS.ErrnoException | undefined;
+                if (knownErr && knownErr.code === 'ERR_SERVER_NOT_RUNNING') {
+                    console.debug('[Server] Server already closed during shutdown.');
+                    console.log('[Server] Shutdown complete.');
+                    process.exit(0);
+                    return;
+                }
+
+                if (knownErr) {
+                    console.error('[Server] Error during shutdown:', knownErr);
+                    process.exit(1);
+                    return;
+                }
+
+                console.log('[Server] Shutdown complete.');
+                process.exit(0);
+            });
+        } catch (error) {
+            const knownErr = error as NodeJS.ErrnoException;
+            if (knownErr.code === 'ERR_SERVER_NOT_RUNNING') {
+                console.debug('[Server] Server already closed during shutdown.');
+                console.log('[Server] Shutdown complete.');
+                process.exit(0);
+                return;
             }
-            console.log('[Server] Shutdown complete.');
-            process.exit(0);
-        });
+
+            console.error('[Server] Error during shutdown:', knownErr);
+            process.exit(1);
+        }
     });
 
     setTimeout(() => {

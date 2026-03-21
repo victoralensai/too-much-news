@@ -73,6 +73,13 @@ Example response includes:
 - `archiveSize`
 - `pendingQueueSize`
 - `timestamp`
+- `newestArticleAgeMs`
+
+UI behavior:
+
+- `BUFFER` shows a slightly fuzzed value (about +/-5%) for the first 5 seconds after page load, then switches to the exact queue size.
+- `SIGNAL` shows `Newest: ... ago` while buffered items exist.
+- `SIGNAL` switches to `🔴 Real-time` when the client queue is empty.
 
 ## Testing
 

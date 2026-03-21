@@ -3,13 +3,14 @@ import { NewsItem } from '../src/poller';
 
 describe('server utils', () => {
     test('creates health payload with expected shape', () => {
-        const payload = createHealthPayload(10, 4, 123, '2026-01-01T00:00:00.000Z');
+        const payload = createHealthPayload(10, 4, 123, 2500, '2026-01-01T00:00:00.000Z');
 
         expect(payload).toEqual({
             status: 'ok',
             archiveSize: 10,
             pendingQueueSize: 4,
             uptimeSeconds: 123,
+            newestArticleAgeMs: 2500,
             timestamp: '2026-01-01T00:00:00.000Z'
         });
     });

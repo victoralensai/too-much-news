@@ -5,6 +5,7 @@ export interface HealthPayload {
     uptimeSeconds: number;
     archiveSize: number;
     pendingQueueSize: number;
+    newestArticleAgeMs: number | null;
     timestamp: string;
 }
 
@@ -12,6 +13,7 @@ export function createHealthPayload(
     archiveSize: number,
     pendingQueueSize: number,
     uptimeSeconds: number,
+    newestArticleAgeMs: number | null,
     timestamp = new Date().toISOString()
 ): HealthPayload {
     return {
@@ -19,6 +21,7 @@ export function createHealthPayload(
         uptimeSeconds,
         archiveSize,
         pendingQueueSize,
+        newestArticleAgeMs,
         timestamp
     };
 }

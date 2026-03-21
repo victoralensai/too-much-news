@@ -9,16 +9,19 @@ const MAX_QUEUE_ITEMS = 20000;
 const MAX_RANDOM_PICK_WINDOW = 500;
 const OVERLOAD_THRESHOLD = 5000;
 const HIGH_DENSITY_THRESHOLD = 1000;
+const HEALTH_POLL_INTERVAL_MS = 2000;
+const INITIAL_BUFFER_FUZZY_WINDOW_MS = 5000;
 
 let newsQueue = [];
 let isProcessing = false;
 let droppedItemCount = 0;
-let currentConnectionState = 'CONNECTING';
+const pageLoadedAtMs = Date.now();
+let newestArticleAgeMs = null;
+let newestArticleAgeSampledAtMs = Date.now();
 
 const GLITCH_CHARS = '01$#@%&*<>?/';
 
 socket.on('connect', () => {
-    currentConnectionState = 'CONNECTED';
     updateQueueStatus();
     if (!isProcessing && newsQueue.length > 0) {
         isProcessing = true;
@@ -27,17 +30,14 @@ socket.on('connect', () => {
 });
 
 socket.on('disconnect', () => {
-    currentConnectionState = 'DISCONNECTED';
     updateQueueStatus();
 });
 
 socket.io.on('reconnect_attempt', () => {
-    currentConnectionState = 'RECONNECTING';
     updateQueueStatus();
 });
 
 socket.on('connect_error', () => {
-    currentConnectionState = 'DEGRADED';
     updateQueueStatus();
 });
 
@@ -68,24 +68,76 @@ socket.on('news-item', (item) => {
 });
 
 function updateQueueStatus() {
-    queueCountEl.innerText = String(newsQueue.length);
+    queueCountEl.innerText = getDisplayQueueCount(newsQueue.length);
 
-    if (currentConnectionState !== 'CONNECTED') {
-        signalStrengthEl.innerText = currentConnectionState;
-        signalStrengthEl.style.color = '#ff5555';
+    if (newsQueue.length === 0) {
+        signalStrengthEl.innerText = '🔴 Real-time';
+        signalStrengthEl.style.color = '#fff';
         return;
     }
 
-    if (newsQueue.length > OVERLOAD_THRESHOLD) {
-        const droppedText = droppedItemCount > 0 ? ` (DROP ${droppedItemCount})` : '';
-        signalStrengthEl.innerText = `BUFFER OVERLOAD${droppedText}`;
-        signalStrengthEl.style.color = 'red';
-    } else if (newsQueue.length > HIGH_DENSITY_THRESHOLD) {
-        signalStrengthEl.innerText = 'HIGH DENSITY';
-        signalStrengthEl.style.color = 'orange';
-    } else {
-        signalStrengthEl.innerText = 'STABLE';
-        signalStrengthEl.style.color = '#fff';
+    signalStrengthEl.innerText = `Newest: ${formatAge(getEffectiveNewestArticleAgeMs())}`;
+    signalStrengthEl.style.color = '#fff';
+}
+
+function getDisplayQueueCount(queueLength) {
+    if (queueLength <= 0) {
+        return '0';
+    }
+
+    const withinFuzzyWindow = Date.now() - pageLoadedAtMs <= INITIAL_BUFFER_FUZZY_WINDOW_MS;
+    if (!withinFuzzyWindow) {
+        return String(queueLength);
+    }
+
+    const multiplier = 0.95 + Math.random() * 0.1;
+    return String(Math.max(1, Math.round(queueLength * multiplier)));
+}
+
+function getEffectiveNewestArticleAgeMs() {
+    if (newestArticleAgeMs === null) {
+        return null;
+    }
+
+    const elapsedSinceSample = Date.now() - newestArticleAgeSampledAtMs;
+    return Math.max(0, newestArticleAgeMs + elapsedSinceSample);
+}
+
+function formatAge(ageMs) {
+    if (ageMs === null) {
+        return '--';
+    }
+
+    const totalSeconds = Math.floor(ageMs / 1000);
+    if (totalSeconds < 60) {
+        return `${totalSeconds}s ago`;
+    }
+
+    const totalMinutes = Math.floor(totalSeconds / 60);
+    if (totalMinutes < 60) {
+        return `${totalMinutes}m ago`;
+    }
+
+    const totalHours = Math.floor(totalMinutes / 60);
+    return `${totalHours}h ago`;
+}
+
+async function refreshHealth() {
+    try {
+        const response = await fetch('/health', { cache: 'no-store' });
+        if (!response.ok) {
+            return;
+        }
+
+        const payload = await response.json();
+        const nextAge = payload?.newestArticleAgeMs;
+        if (typeof nextAge === 'number' || nextAge === null) {
+            newestArticleAgeMs = nextAge;
+            newestArticleAgeSampledAtMs = Date.now();
+            updateQueueStatus();
+        }
+    } catch (error) {
+        console.error('[Client] Health refresh failed:', error);
     }
 }
 
@@ -300,6 +352,8 @@ function updateTicker() {
 
 updateTicker();
 setInterval(updateTicker, 60000);
+refreshHealth();
+setInterval(refreshHealth, HEALTH_POLL_INTERVAL_MS);
 
 function safeUrl(url) {
     try {
