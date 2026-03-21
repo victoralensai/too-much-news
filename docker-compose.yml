@@ -1,0 +1,20 @@
+services:
+  too-much-news:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: too-much-news:local
+    container_name: too-much-news-local
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    environment:
+      - PORT=3000
+      - ARCHIVE_FILE_PATH=/app/data/archive.json
+    volumes:
+      - too-much-news-data:/app/data
+    restart: unless-stopped
+
+volumes:
+  too-much-news-data:
