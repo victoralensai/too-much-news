@@ -24,3 +24,5 @@ GEMINI.md
 
 # Runtime state
 archive.json
+public/og-image-cached.png
+public/og-image-fallback.png

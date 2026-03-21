@@ -7,7 +7,11 @@ import { NewsPoller, NewsItem } from './poller';
 import { readPositiveIntEnv } from './config';
 import { isNewsItemArray, parseArchiveJson } from './archive';
 import { createHealthPayload, getNextBroadcastDelay, trimArchive } from './server-utils';
-import { generateSocialImagePng, pruneRecentHeadlineTimestamps } from './social-preview';
+import {
+    generateFallbackSocialImagePng,
+    generateSocialImagePng,
+    pruneRecentHeadlineTimestamps
+} from './social-preview';
 
 const app = express();
 const server = http.createServer(app);
@@ -19,8 +23,10 @@ const HISTORY_SYNC_LIMIT = readPositiveIntEnv('HISTORY_SYNC_LIMIT', 2500);
 const ARCHIVE_SAVE_INTERVAL_MS = readPositiveIntEnv('ARCHIVE_SAVE_INTERVAL_MS', 300000);
 const BROADCAST_DELAY_MIN_MS = readPositiveIntEnv('BROADCAST_DELAY_MIN_MS', 300);
 const BROADCAST_DELAY_MAX_MS = readPositiveIntEnv('BROADCAST_DELAY_MAX_MS', 1500);
-const SOCIAL_IMAGE_CACHE_MS = 30000;
+const SOCIAL_IMAGE_REFRESH_MS = 300000;
 const SOCIAL_DESCRIPTION = 'finally become up to date with whats happening in the world!';
+const CACHED_SOCIAL_IMAGE_PATH = path.join(__dirname, '../public/og-image-cached.png');
+const FALLBACK_SOCIAL_IMAGE_PATH = path.join(__dirname, '../public/og-image-fallback.png');
 
 // Serve static files
 app.use(express.static(path.join(__dirname, '../public')));
@@ -41,26 +47,24 @@ app.get('/health', (_req, res) => {
 
 app.get('/og-image', async (_req, res) => {
     try {
-        const now = Date.now();
-        if (cachedOgImagePng && now - cachedOgImageGeneratedAtMs < SOCIAL_IMAGE_CACHE_MS) {
-            res.setHeader('Content-Type', 'image/png');
-            res.setHeader('Cache-Control', `public, max-age=${Math.floor(SOCIAL_IMAGE_CACHE_MS / 1000)}`);
-            res.status(200).send(cachedOgImagePng);
+        if (fs.existsSync(CACHED_SOCIAL_IMAGE_PATH)) {
+            res.setHeader('Cache-Control', `public, max-age=${Math.floor(SOCIAL_IMAGE_REFRESH_MS / 1000)}`);
+            res.type('png');
+            res.sendFile(CACHED_SOCIAL_IMAGE_PATH);
             return;
         }
 
-        recentHeadlineTimestampsMs = pruneRecentHeadlineTimestamps(recentHeadlineTimestampsMs, now);
-        const recentHeadlineCount = recentHeadlineTimestampsMs.length;
-        const imageBuffer = await generateSocialImagePng(recentHeadlineCount, SOCIAL_DESCRIPTION);
+        if (fs.existsSync(FALLBACK_SOCIAL_IMAGE_PATH)) {
+            res.setHeader('Cache-Control', 'public, max-age=600');
+            res.type('png');
+            res.sendFile(FALLBACK_SOCIAL_IMAGE_PATH);
+            return;
+        }
 
-        cachedOgImagePng = imageBuffer;
-        cachedOgImageGeneratedAtMs = now;
-
-        res.setHeader('Content-Type', 'image/png');
-        res.setHeader('Cache-Control', `public, max-age=${Math.floor(SOCIAL_IMAGE_CACHE_MS / 1000)}`);
-        res.status(200).send(imageBuffer);
+        res.setHeader('Cache-Control', 'public, max-age=300');
+        res.sendFile(path.join(__dirname, '../public/og-fallback.svg'));
     } catch (error) {
-        console.error('[Social] Failed to generate OG image:', error);
+        console.error('[Social] Failed to serve OG image:', error);
         res.sendFile(path.join(__dirname, '../public/og-fallback.svg'));
     }
 });
@@ -72,8 +76,6 @@ const poller = new NewsPoller();
 let newsArchive: NewsItem[] = [];
 let newestArticleTimestampMs: number | null = null;
 let recentHeadlineTimestampsMs: number[] = [];
-let cachedOgImagePng: Buffer | null = null;
-let cachedOgImageGeneratedAtMs = 0;
 
 // Load archive from file if exists to survive restarts
 try {
@@ -130,7 +132,6 @@ poller.on('news', (item: NewsItem) => {
     newestArticleTimestampMs = now;
     recentHeadlineTimestampsMs.push(now);
     recentHeadlineTimestampsMs = pruneRecentHeadlineTimestamps(recentHeadlineTimestampsMs, now);
-    cachedOgImagePng = null;
 
     // Save immediately if this is the first item ever to ensure file creation
     if (newsArchive.length === 1) {
@@ -151,6 +152,41 @@ function saveArchive() {
 
 // Save archive periodically (every 5 minutes)
 const archiveInterval = setInterval(saveArchive, ARCHIVE_SAVE_INTERVAL_MS);
+
+async function ensureFallbackSocialImage(): Promise<void> {
+    if (fs.existsSync(FALLBACK_SOCIAL_IMAGE_PATH)) {
+        return;
+    }
+
+    try {
+        const image = await generateFallbackSocialImagePng();
+        fs.writeFileSync(FALLBACK_SOCIAL_IMAGE_PATH, image);
+    } catch (error) {
+        console.error('[Social] Failed to create fallback OG image:', error);
+    }
+}
+
+async function refreshCachedSocialImage(): Promise<void> {
+    try {
+        const now = Date.now();
+        recentHeadlineTimestampsMs = pruneRecentHeadlineTimestamps(recentHeadlineTimestampsMs, now);
+        const recentHeadlineCount = recentHeadlineTimestampsMs.length;
+        const image =
+            recentHeadlineCount > 0
+                ? await generateSocialImagePng(recentHeadlineCount, SOCIAL_DESCRIPTION)
+                : await generateFallbackSocialImagePng();
+        fs.writeFileSync(CACHED_SOCIAL_IMAGE_PATH, image);
+        console.log(`[Social] Refreshed OG image (${recentHeadlineCount} headlines in last minute).`);
+    } catch (error) {
+        console.error('[Social] Failed to refresh cached OG image:', error);
+    }
+}
+
+void ensureFallbackSocialImage();
+void refreshCachedSocialImage();
+const socialImageInterval = setInterval(() => {
+    void refreshCachedSocialImage();
+}, SOCIAL_IMAGE_REFRESH_MS);
 
 // STEADY BROADCASTER LOOP: Guarantees the firehose never stops
 function broadcastNext() {
@@ -180,6 +216,7 @@ broadcastNext();
 function shutdown(signal: string) {
     console.log(`[Server] Received ${signal}. Shutting down...`);
     clearInterval(archiveInterval);
+    clearInterval(socialImageInterval);
     poller.stop();
     saveArchive();
 

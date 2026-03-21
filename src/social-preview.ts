@@ -18,24 +18,57 @@ export function escapeXml(value: string): string {
 }
 
 export function buildSocialOverlaySvg(recentHeadlineCount: number, description: string): string {
-    const primaryText = `YOU MISSED ${recentHeadlineCount.toLocaleString()} HEADLINES IN THE LAST MINUTE`;
+    const primaryLine = `YOU MISSED ${recentHeadlineCount.toLocaleString()} HEADLINES`;
+    const secondaryLine = 'IN THE LAST MINUTE';
 
     return `
         <svg width="${SOCIAL_IMAGE_WIDTH}" height="${SOCIAL_IMAGE_HEIGHT}" xmlns="http://www.w3.org/2000/svg">
             <rect width="${SOCIAL_IMAGE_WIDTH}" height="${SOCIAL_IMAGE_HEIGHT}" fill="#050505"/>
-            <text x="100" y="180" fill="#f3f3f3" font-family="Courier New, monospace" font-size="82">📰</text>
-            <text x="100" y="285" fill="#f3f3f3" font-family="Courier New, monospace" font-size="56">${escapeXml(
-                primaryText
+            <text x="80" y="280" fill="#f3f3f3" font-family="sans-serif" font-weight="700" font-size="56">${escapeXml(
+                primaryLine
             )}</text>
-            <text x="100" y="365" fill="#8ae68a" font-family="Courier New, monospace" font-size="34">${escapeXml(
+            <text x="80" y="350" fill="#f3f3f3" font-family="sans-serif" font-weight="700" font-size="50">${escapeXml(
+                secondaryLine
+            )}</text>
+            <text x="80" y="430" fill="#8ae68a" font-family="sans-serif" font-weight="600" font-size="34">${escapeXml(
                 description
             )}</text>
         </svg>
     `;
 }
 
+export function buildFallbackOverlaySvg(): string {
+    return `
+        <svg width="${SOCIAL_IMAGE_WIDTH}" height="${SOCIAL_IMAGE_HEIGHT}" xmlns="http://www.w3.org/2000/svg">
+            <rect width="${SOCIAL_IMAGE_WIDTH}" height="${SOCIAL_IMAGE_HEIGHT}" fill="#050505"/>
+            <text x="80" y="300" fill="#f3f3f3" font-family="sans-serif" font-weight="700" font-size="52">
+                YOU ARE MISSING ON WHATS
+            </text>
+            <text x="80" y="370" fill="#f3f3f3" font-family="sans-serif" font-weight="700" font-size="52">
+                HAPPENING RIGHT NOW
+            </text>
+        </svg>
+    `;
+}
+
 export async function generateSocialImagePng(recentHeadlineCount: number, description: string): Promise<Buffer> {
     const overlaySvg = buildSocialOverlaySvg(recentHeadlineCount, description);
+
+    return sharp({
+        create: {
+            width: SOCIAL_IMAGE_WIDTH,
+            height: SOCIAL_IMAGE_HEIGHT,
+            channels: 3,
+            background: '#050505'
+        }
+    })
+        .composite([{ input: Buffer.from(overlaySvg), top: 0, left: 0 }])
+        .png()
+        .toBuffer();
+}
+
+export async function generateFallbackSocialImagePng(): Promise<Buffer> {
+    const overlaySvg = buildFallbackOverlaySvg();
 
     return sharp({
         create: {

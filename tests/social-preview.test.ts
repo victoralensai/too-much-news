@@ -1,7 +1,9 @@
 import {
     ONE_MINUTE_MS,
+    buildFallbackOverlaySvg,
     buildSocialOverlaySvg,
     escapeXml,
+    generateFallbackSocialImagePng,
     generateSocialImagePng,
     pruneRecentHeadlineTimestamps
 } from '../src/social-preview';
@@ -30,12 +32,25 @@ describe('social preview utils', () => {
 
     test('builds SVG with escaped text and count', () => {
         const svg = buildSocialOverlaySvg(1234, 'a < b & c');
-        expect(svg).toContain('YOU MISSED 1,234 HEADLINES IN THE LAST MINUTE');
+        expect(svg).toContain('YOU MISSED 1,234 HEADLINES');
+        expect(svg).toContain('IN THE LAST MINUTE');
         expect(svg).toContain('a &lt; b &amp; c');
     });
 
     test('generates PNG buffer', async () => {
         const png = await generateSocialImagePng(42, 'desc');
+        expect(Buffer.isBuffer(png)).toBe(true);
+        expect(png.length).toBeGreaterThan(1000);
+    });
+
+    test('builds fallback SVG with static warning text', () => {
+        const svg = buildFallbackOverlaySvg();
+        expect(svg).toContain('YOU ARE MISSING ON WHATS');
+        expect(svg).toContain('HAPPENING RIGHT NOW');
+    });
+
+    test('generates fallback PNG buffer', async () => {
+        const png = await generateFallbackSocialImagePng();
         expect(Buffer.isBuffer(png)).toBe(true);
         expect(png.length).toBeGreaterThan(1000);
     });
