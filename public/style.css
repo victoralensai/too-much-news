@@ -17,7 +17,6 @@ body {
 
 #header {
     display: flex;
-    justify-content: space-between;
     align-items: center;
     border-bottom: 2px solid #0f0;
     margin-bottom: 10px;
@@ -26,12 +25,12 @@ body {
     position: sticky;
     top: 0;
     z-index: 1000;
+    gap: 10px;
 }
 
-#left-controls {
+#left-spacer {
     flex: 1;
-    display: flex;
-    align-items: center;
+    min-width: 0;
 }
 
 #pause-toggle {
@@ -50,14 +49,14 @@ body {
 }
 
 #status {
-    flex: 2;
     font-size: 0.85em;
     color: #0f0;
-    text-align: center;
+    white-space: nowrap;
 }
 
 #title-wrapper {
-    flex: 2;
+    flex: 1;
+    min-width: 0;
     text-align: center;
 }
 
@@ -67,6 +66,7 @@ body {
     justify-content: flex-end;
     align-items: center;
     gap: 15px;
+    min-width: 0;
 }
 
 #queue-status {
@@ -90,6 +90,29 @@ body {
 #signal-strength {
     color: #fff;
     text-shadow: 0 0 5px #0f0;
+}
+
+@media (max-width: 980px) {
+    #header {
+        flex-wrap: wrap;
+    }
+
+    #left-spacer {
+        display: none;
+    }
+
+    #title-wrapper {
+        flex: 1 1 100%;
+        order: 1;
+    }
+
+    #right-controls {
+        flex: 1 1 100%;
+        order: 2;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
 }
 
 h1 {
@@ -123,6 +146,10 @@ h1 {
     color: #ff0;
     font-weight: bold;
     font-size: 0.9em;
+}
+
+body.paused #ticker-content {
+    animation-play-state: paused;
 }
 
 @keyframes ticker {

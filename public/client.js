@@ -69,9 +69,21 @@ window.addEventListener('keydown', (event) => {
         return;
     }
 
+    if (event.key === 'g') {
+        event.preventDefault();
+        jumpFocusToBoundary(false);
+        return;
+    }
+
     if (event.key === 'ArrowDown' || event.key === 'j') {
         event.preventDefault();
         moveFocus(1);
+        return;
+    }
+
+    if (event.key === 'G') {
+        event.preventDefault();
+        jumpFocusToBoundary(true);
         return;
     }
 
@@ -188,6 +200,17 @@ function moveFocus(delta) {
         focusedArticleIndex = Math.max(0, Math.min(items.length - 1, focusedArticleIndex + delta));
     }
 
+    applyFocusedItem(items);
+}
+
+function jumpFocusToBoundary(goToLatest) {
+    const items = getNewsItemElements();
+    if (items.length === 0) {
+        focusedArticleIndex = -1;
+        return;
+    }
+
+    focusedArticleIndex = goToLatest ? items.length - 1 : 0;
     applyFocusedItem(items);
 }
 
@@ -472,6 +495,11 @@ function addNewsItem(item) {
 function updateTicker() {
     const stockSymbols = ['DOW', 'NASDAQ', 'S&P 500', 'BTC', 'ETH', 'TSLA', 'AAPL', 'NVDA', 'INTC', 'MSFT'];
     const cities = ['London', 'New York', 'Tokyo', 'Paris', 'Mars', 'Cyberia', 'Atlantis', 'Lagos', 'Dubai', 'Singapore'];
+    const markets = ['NIKKEI', 'FTSE', 'CAC 40', 'DAX', 'HANG SENG', 'SENSEX'];
+    const commodities = ['GOLD', 'SILVER', 'BRENT', 'WTI', 'NAT GAS', 'URANIUM'];
+    const systemMetrics = ['CPU', 'MEM', 'NET', 'QUEUE PRESSURE', 'EVENT RATE'];
+    const satellites = ['NOAA-19', 'ISS', 'SENTINEL-2A', 'GAIA', 'TESS'];
+    const sectors = ['AI', 'ENERGY', 'BIO', 'AEROSPACE', 'SUPPLY CHAIN'];
     const facts = [
         'GLOBAL POPULATION: 8,102,492,103',
         'SIGNAL STRENGTH: 98%',
@@ -479,7 +507,10 @@ function updateTicker() {
         'ALERT: ATMOSPHERIC NOISE DETECTED',
         'CRISIS LEVEL: NOMINAL',
         'BANDWIDTH: SATURATED',
-        'INTERCEPTED: PROJECT HAIL MARY STATUS...'
+        'INTERCEPTED: PROJECT HAIL MARY STATUS...',
+        `ITEMS RENDERED: ${stream.children.length}`,
+        `QUEUE SIZE: ${newsQueue.length}`,
+        `DROPPED SINCE LOAD: ${droppedItemCount}`
     ];
 
     let tickerText = '';
@@ -493,6 +524,34 @@ function updateTicker() {
     cities.forEach(c => {
         const temp = Math.floor(Math.random() * 40 - 10);
         tickerText += ` ${c.toUpperCase()}: ${temp}°C | `;
+    });
+
+    markets.forEach((m) => {
+        const level = (Math.random() * 9000 + 1000).toFixed(1);
+        const drift = (Math.random() * 6 - 3).toFixed(2);
+        const sign = Number(drift) >= 0 ? '▲' : '▼';
+        tickerText += ` ${m}: ${level} (${drift}%) ${sign} | `;
+    });
+
+    commodities.forEach((name) => {
+        const price = (Math.random() * 3000 + 10).toFixed(2);
+        const delta = (Math.random() * 4 - 2).toFixed(2);
+        tickerText += ` ${name}: $${price} ${delta}% | `;
+    });
+
+    systemMetrics.forEach((metric) => {
+        const reading = Math.floor(Math.random() * 100);
+        tickerText += ` ${metric}: ${reading}% | `;
+    });
+
+    satellites.forEach((sat) => {
+        const passIn = Math.floor(Math.random() * 90) + 1;
+        tickerText += ` ${sat} PASS IN: ${passIn}M | `;
+    });
+
+    sectors.forEach((sector) => {
+        const pulse = Math.floor(Math.random() * 10) + 90;
+        tickerText += ` ${sector} MOMENTUM: ${pulse}/100 | `;
     });
 
     tickerText += facts.join(' | ');
