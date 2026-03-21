@@ -3,6 +3,7 @@ import sharp from 'sharp';
 export const ONE_MINUTE_MS = 60000;
 export const SOCIAL_IMAGE_WIDTH = 1200;
 export const SOCIAL_IMAGE_HEIGHT = 630;
+export const SOCIAL_IMAGE_FONT_FAMILY = 'Liberation Sans, Arial, sans-serif';
 
 export function pruneRecentHeadlineTimestamps(timestampsMs: number[], nowMs: number): number[] {
     return timestampsMs.filter((timestampMs) => nowMs - timestampMs <= ONE_MINUTE_MS);
@@ -24,13 +25,13 @@ export function buildSocialOverlaySvg(recentHeadlineCount: number, description: 
     return `
         <svg width="${SOCIAL_IMAGE_WIDTH}" height="${SOCIAL_IMAGE_HEIGHT}" xmlns="http://www.w3.org/2000/svg">
             <rect width="${SOCIAL_IMAGE_WIDTH}" height="${SOCIAL_IMAGE_HEIGHT}" fill="#050505"/>
-            <text x="80" y="280" fill="#f3f3f3" font-family="sans-serif" font-weight="700" font-size="56">${escapeXml(
+            <text x="80" y="280" fill="#f3f3f3" font-family="${SOCIAL_IMAGE_FONT_FAMILY}" font-weight="700" font-size="56">${escapeXml(
                 primaryLine
             )}</text>
-            <text x="80" y="350" fill="#f3f3f3" font-family="sans-serif" font-weight="700" font-size="50">${escapeXml(
+            <text x="80" y="350" fill="#f3f3f3" font-family="${SOCIAL_IMAGE_FONT_FAMILY}" font-weight="700" font-size="50">${escapeXml(
                 secondaryLine
             )}</text>
-            <text x="80" y="430" fill="#8ae68a" font-family="sans-serif" font-weight="600" font-size="34">${escapeXml(
+            <text x="80" y="430" fill="#8ae68a" font-family="${SOCIAL_IMAGE_FONT_FAMILY}" font-weight="600" font-size="34">${escapeXml(
                 description
             )}</text>
         </svg>
@@ -41,10 +42,10 @@ export function buildFallbackOverlaySvg(): string {
     return `
         <svg width="${SOCIAL_IMAGE_WIDTH}" height="${SOCIAL_IMAGE_HEIGHT}" xmlns="http://www.w3.org/2000/svg">
             <rect width="${SOCIAL_IMAGE_WIDTH}" height="${SOCIAL_IMAGE_HEIGHT}" fill="#050505"/>
-            <text x="80" y="300" fill="#f3f3f3" font-family="sans-serif" font-weight="700" font-size="52">
+            <text x="80" y="300" fill="#f3f3f3" font-family="${SOCIAL_IMAGE_FONT_FAMILY}" font-weight="700" font-size="52">
                 YOU ARE MISSING ON WHATS
             </text>
-            <text x="80" y="370" fill="#f3f3f3" font-family="sans-serif" font-weight="700" font-size="52">
+            <text x="80" y="370" fill="#f3f3f3" font-family="${SOCIAL_IMAGE_FONT_FAMILY}" font-weight="700" font-size="52">
                 HAPPENING RIGHT NOW
             </text>
         </svg>

@@ -14,7 +14,9 @@ WORKDIR /app
 ENV NODE_ENV=production
 
 COPY package*.json ./
-RUN npm ci --omit=dev && npm cache clean --force
+RUN apk add --no-cache fontconfig ttf-liberation \
+    && npm ci --omit=dev \
+    && npm cache clean --force
 
 COPY --from=build /app/dist ./dist
 COPY public ./public

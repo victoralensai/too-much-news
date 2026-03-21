@@ -5,6 +5,7 @@ import {
     escapeXml,
     generateFallbackSocialImagePng,
     generateSocialImagePng,
+    SOCIAL_IMAGE_FONT_FAMILY,
     pruneRecentHeadlineTimestamps
 } from '../src/social-preview';
 
@@ -35,6 +36,7 @@ describe('social preview utils', () => {
         expect(svg).toContain('YOU MISSED 1,234 HEADLINES');
         expect(svg).toContain('IN THE LAST MINUTE');
         expect(svg).toContain('a &lt; b &amp; c');
+        expect(svg).toContain(`font-family="${SOCIAL_IMAGE_FONT_FAMILY}"`);
     });
 
     test('generates PNG buffer', async () => {
@@ -47,6 +49,7 @@ describe('social preview utils', () => {
         const svg = buildFallbackOverlaySvg();
         expect(svg).toContain('YOU ARE MISSING ON WHATS');
         expect(svg).toContain('HAPPENING RIGHT NOW');
+        expect(svg).toContain(`font-family="${SOCIAL_IMAGE_FONT_FAMILY}"`);
     });
 
     test('generates fallback PNG buffer', async () => {
