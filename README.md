@@ -22,9 +22,12 @@ Inspired by the feeling of adding too many RSS feeds to an aggregator and realiz
 - Burst history sync for new clients
 - Adaptive frontend queue processing to preserve responsiveness under load
 - Health endpoint: `GET /health`
+- Dynamic social preview image: `GET /og-image`
 - Graceful shutdown (`SIGINT`, `SIGTERM`) with final archive flush
 - Feed-level failure backoff (circuit breaker) with exponential retry delays
 - Hardened rendering path (safer link handling, no `innerHTML` injection for news rows)
+- Pause/resume rendering with click or keyboard (`Space`)
+- Keyboard navigation for stream (`Up/Down`, `j/k`, `Enter`, `?`)
 
 ## Quick Start
 
@@ -80,6 +83,15 @@ UI behavior:
 - `BUFFER` shows a slightly fuzzed value (about +/-5%) for the first 5 seconds after page load, then switches to the exact queue size.
 - `SIGNAL` shows `Newest: ... ago` while buffered items exist.
 - `SIGNAL` switches to `🔴 Real-time` when the client queue is empty.
+- Browser favicon alternates between `📰` and `🤯` every second, with static fallback support.
+
+Keyboard shortcuts:
+
+- `Space` - pause/resume rendering
+- `Up` / `k` - focus previous article
+- `Down` / `j` - focus next article
+- `Enter` - open focused article in new tab
+- `?` - toggle command help panel
 
 ## Testing
 
