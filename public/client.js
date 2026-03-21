@@ -3,38 +3,84 @@ const stream = document.getElementById('stream');
 const queueCountEl = document.getElementById('queue-count');
 const signalStrengthEl = document.getElementById('signal-strength');
 const tickerContentEl = document.getElementById('ticker-content');
-const MAX_DOM_ITEMS = 300; 
-const MAX_QUEUE_ITEMS = 50000; 
+
+const MAX_DOM_ITEMS = 300;
+const MAX_QUEUE_ITEMS = 20000;
+const MAX_RANDOM_PICK_WINDOW = 500;
+const OVERLOAD_THRESHOLD = 5000;
+const HIGH_DENSITY_THRESHOLD = 1000;
 
 let newsQueue = [];
 let isProcessing = false;
+let droppedItemCount = 0;
+let currentConnectionState = 'CONNECTING';
 
-const GLITCH_CHARS = "01$#@%&*<>?/";
+const GLITCH_CHARS = '01$#@%&*<>?/';
 
 socket.on('connect', () => {
-    console.log('Connected to server');
-    signalStrengthEl.innerText = 'STRONG';
-});
-
-socket.on('news-item', (item) => {
-    newsQueue.push(item);
-    if (newsQueue.length > MAX_QUEUE_ITEMS) {
-        newsQueue.shift(); 
-    }
+    currentConnectionState = 'CONNECTED';
     updateQueueStatus();
-    if (!isProcessing) {
+    if (!isProcessing && newsQueue.length > 0) {
         isProcessing = true;
         processQueue();
     }
 });
 
+socket.on('disconnect', () => {
+    currentConnectionState = 'DISCONNECTED';
+    updateQueueStatus();
+});
+
+socket.io.on('reconnect_attempt', () => {
+    currentConnectionState = 'RECONNECTING';
+    updateQueueStatus();
+});
+
+socket.on('connect_error', () => {
+    currentConnectionState = 'DEGRADED';
+    updateQueueStatus();
+});
+
+socket.on('news-item', (item) => {
+    try {
+        if (!isValidNewsItem(item)) {
+            return;
+        }
+
+        newsQueue.push(item);
+        if (newsQueue.length > MAX_QUEUE_ITEMS) {
+            const overflow = newsQueue.length - MAX_QUEUE_ITEMS;
+            if (overflow > 0) {
+                newsQueue.splice(0, overflow);
+                droppedItemCount += overflow;
+            }
+        }
+
+        updateQueueStatus();
+
+        if (!isProcessing) {
+            isProcessing = true;
+            processQueue();
+        }
+    } catch (error) {
+        console.error('[Client] Failed to queue item:', error);
+    }
+});
+
 function updateQueueStatus() {
-    queueCountEl.innerText = newsQueue.length;
-    
-    if (newsQueue.length > 5000) {
-        signalStrengthEl.innerText = 'BUFFER OVERLOAD';
+    queueCountEl.innerText = String(newsQueue.length);
+
+    if (currentConnectionState !== 'CONNECTED') {
+        signalStrengthEl.innerText = currentConnectionState;
+        signalStrengthEl.style.color = '#ff5555';
+        return;
+    }
+
+    if (newsQueue.length > OVERLOAD_THRESHOLD) {
+        const droppedText = droppedItemCount > 0 ? ` (DROP ${droppedItemCount})` : '';
+        signalStrengthEl.innerText = `BUFFER OVERLOAD${droppedText}`;
         signalStrengthEl.style.color = 'red';
-    } else if (newsQueue.length > 1000) {
+    } else if (newsQueue.length > HIGH_DENSITY_THRESHOLD) {
         signalStrengthEl.innerText = 'HIGH DENSITY';
         signalStrengthEl.style.color = 'orange';
     } else {
@@ -44,48 +90,78 @@ function updateQueueStatus() {
 }
 
 async function processQueue() {
-    if (newsQueue.length === 0) {
-        isProcessing = false;
-        return;
-    }
-
-    let count = 1;
-    let baseDelay = 1000; 
-    const qLen = newsQueue.length;
-
-    if (qLen > 5000) {
-        count = Math.floor(Math.random() * 20) + 10;
-        baseDelay = 100;
-    } else if (qLen > 1000) {
-        count = Math.floor(Math.random() * 8) + 4;
-        baseDelay = 250;
-    } else if (qLen > 100) {
-        count = Math.floor(Math.random() * 3) + 1;
-        baseDelay = 500;
-    } else {
-        const burstChance = Math.random();
-        if (burstChance > 0.95) count = Math.floor(Math.random() * 5) + 3;
-        else if (burstChance > 0.8) count = Math.floor(Math.random() * 2) + 1;
-        baseDelay = 1200;
-    }
-
-    for (let i = 0; i < count; i++) {
-        if (newsQueue.length > 0) {
-            const windowSize = Math.min(newsQueue.length, 500);
-            const randomIndex = Math.floor(Math.random() * windowSize);
-            const item = newsQueue.splice(randomIndex, 1)[0];
-            
-            addNewsItem(item);
-            
-            if (count > 1 && qLen < 1000) await new Promise(r => setTimeout(r, 30));
+    try {
+        if (newsQueue.length === 0) {
+            isProcessing = false;
+            return;
         }
+
+        let count = 1;
+        let baseDelay = 1000;
+        const qLen = newsQueue.length;
+
+        if (qLen > OVERLOAD_THRESHOLD) {
+            count = Math.floor(Math.random() * 30) + 20;
+            baseDelay = 50;
+        } else if (qLen > HIGH_DENSITY_THRESHOLD) {
+            count = Math.floor(Math.random() * 15) + 5;
+            baseDelay = 150;
+        } else if (qLen > 400) {
+            count = Math.floor(Math.random() * 10) + 5;
+            baseDelay = 200;
+        } else if (qLen > 100) {
+            count = Math.floor(Math.random() * 5) + 2;
+            baseDelay = 400;
+        } else {
+            const burstChance = Math.random();
+            if (burstChance > 0.95) count = Math.floor(Math.random() * 5) + 3;
+            else if (burstChance > 0.8) count = Math.floor(Math.random() * 2) + 1;
+            baseDelay = 1000;
+        }
+
+        for (let i = 0; i < count; i++) {
+            if (newsQueue.length === 0) {
+                break;
+            }
+
+            const item = dequeueRandomItem();
+            if (!item) {
+                continue;
+            }
+
+            addNewsItem(item);
+
+            if (count > 1 && qLen < HIGH_DENSITY_THRESHOLD) {
+                await new Promise((resolve) => setTimeout(resolve, 30));
+            }
+        }
+
+        updateQueueStatus();
+        stream.scrollTop = stream.scrollHeight;
+
+        const nextDelay = Math.random() * baseDelay + baseDelay / 4;
+        setTimeout(processQueue, nextDelay);
+    } catch (error) {
+        console.error('[Client] Queue processing failed:', error);
+        setTimeout(processQueue, 500);
+    }
+}
+
+function dequeueRandomItem() {
+    if (newsQueue.length === 0) {
+        return null;
     }
 
-    updateQueueStatus();
-    stream.scrollTop = stream.scrollHeight;
+    const windowSize = Math.min(newsQueue.length, MAX_RANDOM_PICK_WINDOW);
+    const fromTail = Math.floor(Math.random() * windowSize);
+    const randomIndex = newsQueue.length - 1 - fromTail;
+    const lastIndex = newsQueue.length - 1;
 
-    const nextDelay = Math.random() * baseDelay + (baseDelay / 4);
-    setTimeout(processQueue, nextDelay);
+    const selected = newsQueue[randomIndex];
+    newsQueue[randomIndex] = newsQueue[lastIndex];
+    newsQueue.pop();
+
+    return selected;
 }
 
 function scrambleText(element, originalText) {
@@ -145,13 +221,32 @@ function addNewsItem(item) {
         : 'source';
 
     const time = new Date().toLocaleTimeString();
-    div.innerHTML = `
-        <span class="timestamp">[${time}]</span>
-        <span class="${sourceClass}">${item.source}</span>
-        <span class="title-container"><a href="${item.link}" target="_blank" class="news-title" style="color: inherit; text-decoration: none;">${item.title}</a></span>
-    `;
+    const timestampEl = document.createElement('span');
+    timestampEl.className = 'timestamp';
+    timestampEl.innerText = `[${time}]`;
 
-    const titleEl = div.querySelector('.news-title');
+    const sourceEl = document.createElement('span');
+    sourceEl.className = sourceClass;
+    sourceEl.innerText = item.source;
+
+    const titleContainer = document.createElement('span');
+    titleContainer.className = 'title-container';
+
+    const titleLink = document.createElement('a');
+    titleLink.className = 'news-title';
+    titleLink.style.color = 'inherit';
+    titleLink.style.textDecoration = 'none';
+    titleLink.target = '_blank';
+    titleLink.rel = 'noopener noreferrer';
+    titleLink.href = safeUrl(item.link);
+    titleLink.innerText = item.title;
+
+    titleContainer.appendChild(titleLink);
+    div.appendChild(timestampEl);
+    div.appendChild(sourceEl);
+    div.appendChild(titleContainer);
+
+    const titleEl = titleLink;
     
     // Scramble effect check - Rare, tied to impact
     if ((isHighImpact && Math.random() > 0.6) || (Math.random() > 0.99)) {
@@ -159,7 +254,9 @@ function addNewsItem(item) {
     }
 
     div.onclick = (e) => {
-        if (e.target.tagName !== 'A') window.open(item.link, '_blank');
+        if (e.target.tagName !== 'A') {
+            window.open(safeUrl(item.link), '_blank', 'noopener,noreferrer');
+        }
     };
 
     stream.appendChild(div);
@@ -203,3 +300,27 @@ function updateTicker() {
 
 updateTicker();
 setInterval(updateTicker, 60000);
+
+function safeUrl(url) {
+    try {
+        const parsed = new URL(url);
+        if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+            return '#';
+        }
+        return parsed.toString();
+    } catch {
+        return '#';
+    }
+}
+
+function isValidNewsItem(item) {
+    if (!item || typeof item !== 'object') {
+        return false;
+    }
+
+    return (
+        typeof item.title === 'string' &&
+        typeof item.link === 'string' &&
+        typeof item.source === 'string'
+    );
+}
