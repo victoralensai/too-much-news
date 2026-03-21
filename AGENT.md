@@ -15,7 +15,7 @@
 - `PORT` (default: `3000`)
 - `ARCHIVE_FILE_PATH` (default: `archive.json` in repo root)
 - `ARCHIVE_LIMIT` (default: `2000`)
-- `HISTORY_SYNC_LIMIT` (default: `500`)
+- `HISTORY_SYNC_LIMIT` (default: `2500`)
 - `ARCHIVE_SAVE_INTERVAL_MS` (default: `300000`)
 - `BROADCAST_DELAY_MIN_MS` (default: `300`)
 - `BROADCAST_DELAY_MAX_MS` (default: `1500`)
